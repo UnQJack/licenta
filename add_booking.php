@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'add_notification.php';
+require_once 'send_email_notification.php';
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: bookings.php");
@@ -63,7 +65,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("iids", $flight_id, $user_id, $price, $status);
 
             if ($stmt->execute()) {
+                addNotification(
+                    $conn,
+                    'bookings',
+                    'Adăugare',
+                    'A fost adăugată o rezervare pentru zborul cu ID #' . $flight_id . '.'
+                );
                 $successMessage = "Rezervarea a fost adăugată cu succes.";
+
+                $userEmailStmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
+                $userEmailStmt->bind_param("i", $user_id);
+                $userEmailStmt->execute();
+                $userData = $userEmailStmt->get_result()->fetch_assoc();
+                $userEmailStmt->close();
+
+                if ($userData) {
+                    $subject = "SkyTix - Rezervare adăugată";
+
+                    $emailMessage =
+                        "Bună, " . $userData['name'] . "!\n\n" .
+                        "Rezervarea ta a fost adăugată cu succes.\n" .
+                        "ID zbor: #" . $flight_id . "\n" .
+                        "Preț: " . number_format($price, 2) . " RON\n" .
+                        "Status: " . $status . "\n\n" .
+                        "Mulțumim că folosești SkyTix.";
+
+                    sendEmailNotification($conn, $userData['email'], $subject, $emailMessage);
+                }
+
             } else {
                 $errorMessage = "Eroare la inserare: " . $conn->error;
             }

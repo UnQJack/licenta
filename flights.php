@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'add_notification.php';
 
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 
@@ -14,6 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status']) && $
         $stmt = $conn->prepare("UPDATE flights SET status = ? WHERE id = ?");
         $stmt->bind_param("si", $newStatus, $flightId);
         $stmt->execute();
+        addNotification(
+            $conn,
+            'flights',
+            'Actualizare',
+            'Statusul zborului cu ID #' . $flightId . ' a fost modificat în ' . $newStatus . '.'
+        );
         $stmt->close();
     }
 
@@ -27,6 +34,12 @@ if ($isAdmin && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_fl
     $stmt = $conn->prepare("DELETE FROM flights WHERE id = ?");
     $stmt->bind_param("i", $deleteFlightId);
     $stmt->execute();
+    addNotification(
+        $conn,
+        'flights',
+        'Ștergere',
+        'A fost șters zborul cu ID #' . $deleteFlightId . '.'
+    );
     $stmt->close();
 
     header("Location: flights.php");
@@ -56,6 +69,7 @@ $flightsSql = "
         f.estimated_arrival,
         f.actual_departure,
         f.actual_arrival,
+        f.base_price,
         a.name AS airline_name,
         ac.model AS aircraft_model,
         ao.iata_code AS origin_code,
@@ -419,13 +433,14 @@ while ($row = $airlinesResult->fetch_assoc()) {
             <div class="sidebar-logo">✈ SkyTix</div>
 
             <ul class="menu">
-                <li><a href="home.php">Pagina Principală</a></li>
-                <li><a href="bookings.php">Rezervări</a></li>
+                <li><a href="home.php">Pagina Principala</a></li>
+                <li><a href="bookings.php">Rezervari</a></li>
                 <li class="active"><a href="flights.php">Zboruri</a></li>
-                <li><a href="payments.php">Plăți</a></li>
+                <li><a href="payments.php">Plati</a></li>
                 <li><a href="messages.php">Mesaje</a></li>
-                <li><a href="tracking.php">Urmărire Zboruri</a></li>
+                <li><a href="tracking.php">Urmarire Zboruri</a></li>
                 <li><a href="deals.php">Oferte</a></li>
+                <li><a href="telecom.php">Telecom</a></li>
             </ul>
         </aside>
 
@@ -461,7 +476,7 @@ while ($row = $airlinesResult->fetch_assoc()) {
                     <div class="table-title">Lista Zborurilor</div>
 
                     <?php if ($isAdmin): ?>
-                        <a href="add_flight.php" class="add-btn">+ Adaugă</a>
+                        <a href="add_flight.php" class="add-btn">+ Adauga</a>
                     <?php endif; ?>
                 </div>
 
@@ -470,14 +485,14 @@ while ($row = $airlinesResult->fetch_assoc()) {
                         type="text"
                         id="flightSearch"
                         class="filter-input"
-                        placeholder="Caută zbor, companie, rută..."
+                        placeholder="Caută zbor, companie, ruta..."
                     >
 
                     <select id="statusFilter" class="filter-select">
-                        <option value="">Toate stările</option>
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="">Toate starile</option>
+                        <option value="active">Activ</option>
+                        <option value="completed">Finalizat</option>
+                        <option value="cancelled">Anulat</option>
                     </select>
 
                     <select id="airlineFilter" class="filter-select">
@@ -498,14 +513,15 @@ while ($row = $airlinesResult->fetch_assoc()) {
                                 <th>ID</th>
                                 <th>Zbor</th>
                                 <th>Companie</th>
-                                <th>Aeronavă</th>
-                                <th>Rută</th>
+                                <th>Aeronava</th>
+                                <th>Ruta</th>
+                                <th>Pret</th>
                                 <th>Plecare</th>
                                 <th>Sosire</th>
                                 <th>Stare</th>
 
                                 <?php if ($isAdmin): ?>
-                                    <th>Acțiuni</th>
+                                    <th>Actiuni</th>
                                 <?php endif; ?>
                             </tr>
                         </thead>
@@ -519,6 +535,7 @@ while ($row = $airlinesResult->fetch_assoc()) {
                                         $flight['callsign'] . ' ' .
                                         $flight['airline_name'] . ' ' .
                                         ($flight['aircraft_model'] ?? '') . ' ' .
+                                        $flight['base_price'] . ' ' .
                                         $flight['origin_code'] . ' ' .
                                         $flight['destination_code'] . ' ' .
                                         $flight['origin_city'] . ' ' .
@@ -548,6 +565,10 @@ while ($row = $airlinesResult->fetch_assoc()) {
                                     </td>
 
                                     <td>
+                                        <strong><?= number_format((float)$flight['base_price'], 2) ?> RON</strong>
+                                    </td>
+
+                                    <td>
                                         <div><strong>Programat:</strong> <?= htmlspecialchars($flight['scheduled_departure']) ?></div>
                                         <div class="subtext">Estimat: <?= htmlspecialchars($flight['estimated_departure']) ?></div>
                                         <div class="subtext">Actual: <?= htmlspecialchars($flight['actual_departure']) ?></div>
@@ -570,9 +591,9 @@ while ($row = $airlinesResult->fetch_assoc()) {
                                                     class="status-select <?= strtolower($flight['status']) ?>"
                                                     onchange="this.form.submit()"
                                                 >
-                                                    <option value="Active" <?= $flight['status'] === 'Active' ? 'selected' : '' ?>>Active</option>
-                                                    <option value="Completed" <?= $flight['status'] === 'Completed' ? 'selected' : '' ?>>Completed</option>
-                                                    <option value="Cancelled" <?= $flight['status'] === 'Cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                                                    <option value="Active" <?= $flight['status'] === 'Active' ? 'selected' : '' ?>>Activ</option>
+                                                    <option value="Completed" <?= $flight['status'] === 'Completed' ? 'selected' : '' ?>>Finalizat</option>
+                                                    <option value="Cancelled" <?= $flight['status'] === 'Cancelled' ? 'selected' : '' ?>>Anulat</option>
                                                 </select>
                                             </form>
                                         <?php else: ?>
@@ -586,7 +607,7 @@ while ($row = $airlinesResult->fetch_assoc()) {
                                         <td>
                                             <form method="POST" onsubmit="return confirm('Sigur vrei să ștergi acest zbor?');">
                                                 <input type="hidden" name="delete_flight_id" value="<?= (int)$flight['id'] ?>">
-                                                <button type="submit" class="delete-btn">Șterge</button>
+                                                <button type="submit" class="delete-btn">Sterge</button>
                                             </form>
                                         </td>
                                     <?php endif; ?>

@@ -1,6 +1,32 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'add_notification.php';
+
+$isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_status']) && $isAdmin) {
+    $bookingId = (int)$_POST['booking_id'];
+    $newStatus = $_POST['status'];
+
+    $allowedStatuses = ['Paid', 'Pending', 'Cancelled'];
+
+    if ($bookingId > 0 && in_array($newStatus, $allowedStatuses)) {
+        $stmt = $conn->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $newStatus, $bookingId);
+        $stmt->execute();
+        addNotification(
+            $conn,
+            'bookings',
+            'Actualizare',
+            'Starea rezervării cu ID #' . $bookingId . ' a fost actualizată la ' . $newStatus . '.'
+        );
+        $stmt->close();
+    }
+
+    header("Location: bookings.php");
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_booking_id'])) {
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
@@ -13,6 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_booking_id']))
     $deleteStmt = $conn->prepare("DELETE FROM bookings WHERE id = ?");
     $deleteStmt->bind_param("i", $deleteBookingId);
     $deleteStmt->execute();
+    addNotification(
+        $conn,
+        'bookings',
+        'Ștergere',
+        'A fost ștearsă rezervarea cu ID #' . $deleteBookingId . '.'
+    );
     $deleteStmt->close();
 
     header("Location: bookings.php");
@@ -65,7 +97,7 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skytix - Rezervări</title>
+    <title>Skytix - Rezervari</title>
     <style>
         * {
             box-sizing: border-box;
@@ -354,6 +386,35 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 .filters-bar select {
     min-width: 180px;
 }
+
+.status-form {
+    margin: 0;
+}
+
+.booking-status-select {
+    border: none;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+}
+
+.booking-status-select.paid {
+    background: #e4d09c;
+    color: #1f1f1f;
+}
+
+.booking-status-select.pending {
+    background: #f5edd1;
+    color: #7a5a1a;
+}
+
+.booking-status-select.cancelled {
+    background: #1f1f1f;
+    color: #ffffff;
+}
     </style>
 </head>
 <body>
@@ -362,40 +423,41 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
             <aside class="sidebar">
                 <div class="sidebar-logo">✈ SkyTix</div>
                 <ul class="menu">
-                    <li><a href="home.php">Pagina Principală</a></li>
-                    <li class="active"><a href="bookings.php">Rezervări</a></li>
+                    <li><a href="home.php">Pagina Principala</a></li>
+                    <li class="active"><a href="bookings.php">Rezervari</a></li>
                     <li><a href="flights.php">Zboruri</a></li>
-                    <li><a href="payments.php">Plăți</a></li>
+                    <li><a href="payments.php">Plati</a></li>
                     <li><a href="messages.php">Mesaje</a></li>
-                    <li><a href="tracking.php">Urmărire Zboruri</a></li>
+                    <li><a href="tracking.php">Urmarire Zboruri</a></li>
                     <li><a href="deals.php">Oferte</a></li>
+                    <li><a href="telecom.php">Telecom</a></li>
                 </ul>
             </aside>
 
             <main class="main">
                 <div class="topbar">
-                    <h2>Rezervări</h2>
+                    <h2>Rezervari</h2>
                     
                 </div>
 
                 <section class="cards">
                     <div class="card">
-                        <small>Total Rezervări</small>
+                        <small>Total Rezervari</small>
                         <div class="value"><?= (int)($bookingStats['total_bookings'] ?? 0) ?></div>
                     </div>
 
                     <div class="card">
-                        <small>Rezervări Plătite</small>
+                        <small>Rezervari Platite</small>
                         <div class="value"><?= (int)($bookingStats['paid_bookings'] ?? 0) ?></div>
                     </div>
 
                     <div class="card">
-                        <small>Rezervări în Așteptare</small>
+                        <small>Rezervari in Asteptare</small>
                         <div class="value"><?= (int)($bookingStats['pending_bookings'] ?? 0) ?></div>
                     </div>
 
                     <div class="card">
-                        <small>Rezervări Anulate</small>
+                        <small>Rezervari Anulate</small>
                         <div class="value"><?= (int)($bookingStats['cancelled_bookings'] ?? 0) ?></div>
                     </div>
                 </section>
@@ -405,18 +467,18 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
                         <div class="table-title">Lista Rezervarilor</div>
 
                         <?php if ($isAdmin): ?>
-                            <a href="add_booking.php" class="add-btn">+ Adaugă</a>
+                            <a href="add_booking.php" class="add-btn">+ Adauga</a>
                         <?php endif; ?>
                     </div>
 
                     <div class="filters-bar">
-    <input type="text" id="searchInput" placeholder="Caută utilizator, email, zbor, rută...">
+    <input type="text" id="searchInput" placeholder="Cauta utilizator, email, zbor, ruta...">
 
     <select id="statusFilter">
-        <option value="">Toate stările</option>
-        <option value="paid">Plătită</option>
-        <option value="pending">În așteptare</option>
-        <option value="cancelled">Anulată</option>
+        <option value="">Toate starile</option>
+        <option value="paid">Platita</option>
+        <option value="pending">In asteptare</option>
+        <option value="cancelled">Anulata</option>
     </select>
 
     <select id="companyFilter">
@@ -448,12 +510,12 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
                                     <th>Email</th>
                                     <th>Zbor</th>
                                     <th>Companie</th>
-                                    <th>Rută</th>
-                                    <th>Preț</th>
+                                    <th>Ruta</th>
+                                    <th>Pret</th>
                                     <th>Stare</th>
                                     <th>Data Rezervării</th>
                                     <?php if ($isAdmin): ?>
-                                        <th>Acțiuni</th>
+                                        <th>Actiuni</th>
                                     <?php endif; ?>
                                 </tr>
                             </thead>
@@ -477,19 +539,32 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
                                             <?php
                                             $status = strtolower($booking['status']);
                                             $statusClass = 'status-pending';
-                                            $statusText = 'În Așteptare';
+                                            $statusText = 'In Asteptare';
 
                                             if ($status === 'paid') {
                                                 $statusClass = 'status-paid';
-                                                $statusText = 'Plătită';
+                                                $statusText = 'Platita';
                                             } elseif ($status === 'cancelled') {
                                                 $statusClass = 'status-cancelled';
-                                                $statusText = 'Anulată';
+                                                $statusText = 'Anulata';
                                             }
                                             ?>
-                                            <span class="status-badge <?= $statusClass ?>">
-                                                <?= $statusText ?>
-                                            </span>
+                                            <?php if ($isAdmin): ?>
+    <form method="POST" class="status-form">
+        <input type="hidden" name="booking_id" value="<?= (int)$booking['id'] ?>">
+        <input type="hidden" name="update_booking_status" value="1">
+
+        <select name="status" class="booking-status-select <?= strtolower($booking['status']) ?>" onchange="this.form.submit()">
+            <option value="Paid" <?= $booking['status'] === 'Paid' ? 'selected' : '' ?>>Platita</option>
+            <option value="Pending" <?= $booking['status'] === 'Pending' ? 'selected' : '' ?>>In Asteptare</option>
+            <option value="Cancelled" <?= $booking['status'] === 'Cancelled' ? 'selected' : '' ?>>Anulata</option>
+        </select>
+    </form>
+<?php else: ?>
+    <span class="status-badge <?= $statusClass ?>">
+        <?= $statusText ?>
+    </span>
+<?php endif; ?>
                                         </td>
                                         <td><?= htmlspecialchars($booking['created_at']) ?></td>
 
@@ -497,7 +572,7 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
                                             <td>
                                                 <form method="POST" onsubmit="return confirm('Sigur vrei să ștergi această rezervare?');">
                                                     <input type="hidden" name="delete_booking_id" value="<?= (int)$booking['id'] ?>">
-                                                    <button type="submit" class="delete-btn">Șterge</button>
+                                                    <button type="submit" class="delete-btn">Sterge</button>
                                                 </form>
                                             </td>
                                         <?php endif; ?>
@@ -506,7 +581,7 @@ $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
                             </tbody>
                         </table>
                     <?php else: ?>
-                        <div class="empty-text">Nu există încă rezervări în baza de date.</div>
+                        <div class="empty-text">Nu exista inca rezervari in baza de date.</div>
                     <?php endif; ?>
                 </section>
             </main>

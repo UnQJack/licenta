@@ -1,5 +1,7 @@
 <?php
 require_once 'db.php';
+require_once 'add_notification.php';
+
 header('Content-Type: application/json');
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -10,7 +12,6 @@ $lon = (float)($data['lon'] ?? 0);
 $altitude = (int)($data['altitude'] ?? 0);
 $speed = (int)($data['speed'] ?? 0);
 $heading = (int)($data['heading'] ?? 90);
-$vertical_speed = isset($data['vertical_speed']) ? (int)$data['vertical_speed'] : null;
 
 if ($flight_id <= 0) {
     echo json_encode(["status" => "error", "message" => "flight_id invalid"]);
@@ -25,24 +26,36 @@ $stmt = $conn->prepare("
         lon,
         altitude,
         speed,
-        heading,
-        vertical_speed
+        heading
     )
-    VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)
+    VALUES (?, NOW(), ?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "iddiiii",
+    "iddiii",
     $flight_id,
     $lat,
     $lon,
     $altitude,
     $speed,
-    $heading,
-    $vertical_speed
+    $heading
 );
 
-$stmt->execute();
-$stmt->close();
+if ($stmt->execute()) {
+    addNotification(
+        $conn,
+        'positions',
+        'Inserare',
+        'A fost salvată o poziție nouă pentru zborul cu ID #' . $flight_id .
+        ' (lat: ' . round($lat, 4) .
+        ', lon: ' . round($lon, 4) .
+        ', altitudine: ' . $altitude .
+        ' m, viteză: ' . $speed . ' km/h).'
+    );
 
-echo json_encode(["status" => "ok"]);
+    echo json_encode(["status" => "ok"]);
+} else {
+    echo json_encode(["status" => "error", "message" => $stmt->error]);
+}
+
+$stmt->close();

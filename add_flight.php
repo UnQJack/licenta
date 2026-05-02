@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
+require_once 'add_notification.php';
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: flights.php");
@@ -29,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $estimated_arr = $_POST['estimated_arrival'] ?? '';
     $actual_dep = $_POST['actual_departure'] ?? '';
     $actual_arr = $_POST['actual_arrival'] ?? '';
-
+    $base_price = (float)$_POST['base_price'];
     if (
         $flight_number &&
         $callsign &&
@@ -59,13 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 estimated_departure,
                 estimated_arrival,
                 actual_departure,
-                actual_arrival
+                actual_arrival,
+                base_price
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmt->bind_param(
-            "ssiiiisssssss",
+            "ssiiiisssssssd",
             $flight_number,
             $callsign,
             $airline_id,
@@ -78,10 +80,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $estimated_dep,
             $estimated_arr,
             $actual_dep,
-            $actual_arr
+            $actual_arr,
+            $base_price
         );
 
         if ($stmt->execute()) {
+            addNotification(
+                $conn,
+                'flights',
+                'Adăugare',
+                'A fost adăugat zborul ' . $flight_number . '.'
+            );
             $successMessage = "Zborul a fost adăugat cu succes!";
         } else {
             $errorMessage = "Eroare la inserare: " . $conn->error;
@@ -258,8 +267,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="wrapper">
     <div class="card">
-        <div class="title">Adaugă Zbor</div>
-        <div class="subtitle">Introdu un zbor nou în sistem</div>
+        <div class="title">Adauga Zbor</div>
+        <div class="subtitle">Introdu un zbor nou in sistem</div>
 
         <?php if ($errorMessage): ?>
             <div class="msg error"><?= htmlspecialchars($errorMessage) ?></div>
@@ -271,7 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form method="POST">
             <div class="form-group">
-                <label>Numărul Zborului</label>
+                <label>Numarul Zborului</label>
                 <input name="flight_number" class="input-small" required>
             </div>
 
@@ -281,9 +290,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label>Companie Aeriană</label>
+                <label>Companie Aeriana</label>
                 <select name="airline_id" required>
-                    <option value="">Selectează</option>
+                    <option value="">Selecteaza</option>
                     <?php while ($a = $airlines->fetch_assoc()): ?>
                         <option value="<?= (int)$a['id'] ?>">
                             <?= htmlspecialchars($a['name']) ?>
@@ -296,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Plecare</label>
                     <select name="origin_airport_id" required>
-                        <option value="">Selectează</option>
+                        <option value="">Selecteaza</option>
                         <?php $airports->data_seek(0); while ($a = $airports->fetch_assoc()): ?>
                             <option value="<?= (int)$a['id'] ?>">
                                 <?= htmlspecialchars($a['iata_code']) ?> - <?= htmlspecialchars($a['city']) ?>
@@ -308,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label>Sosire</label>
                     <select name="destination_airport_id" required>
-                        <option value="">Selectează</option>
+                        <option value="">Selecteaza</option>
                         <?php $airports->data_seek(0); while ($a = $airports->fetch_assoc()): ?>
                             <option value="<?= (int)$a['id'] ?>">
                                 <?= htmlspecialchars($a['iata_code']) ?> - <?= htmlspecialchars($a['city']) ?>
@@ -319,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label>Aeronavă</label>
+                <label>Aeronava</label>
                 <select name="aircraft_id">
                     <option value="">—</option>
                     <?php while ($a = $aircraft->fetch_assoc()): ?>
@@ -328,6 +337,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </option>
                     <?php endwhile; ?>
                 </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Preț de bază (RON)</label>
+                <input type="number" name="base_price" step="0.01" min="0" required placeholder="ex: 299.99">
             </div>
 
             <div class="row">

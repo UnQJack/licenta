@@ -119,18 +119,35 @@ body {
 }
 
 .btn {
-    width: 100%;
-    background: #d8b75b;
-    border: none;
-    padding: 14px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
 
-.btn:hover {
-    background: #cfaf52;
-}
+        .btn-primary {
+            background: #d8b75b;
+            color: #1f1f1f;
+        }
+
+        .btn-secondary {
+            background: #efefef;
+            color: #1f1f1f;
+        }
+
+        .btn-primary:hover {
+            background: #cfaf52;
+        }
+
+        .btn-secondary:hover {
+            background: #e6e6e6;
+        }
 
 .back-login {
     margin-top: 15px;
@@ -185,8 +202,8 @@ body {
             </select>
         </div>
 
-        <button class="btn">Adaugă Utilizator Nou</button>
-
+        <button type="submit" class="btn btn-primary">Adaugă Utilizator Nou</button>
+        <a href="add_booking.php" class="btn btn-secondary">Înapoi</a>
     </form>
 
 </div>

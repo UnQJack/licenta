@@ -641,13 +641,14 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
             <aside class="sidebar">
                 <div class="sidebar-logo">✈ SkyTix</div>
                 <ul class="menu">
-                    <li class="active"><a href="home.php">Pagina Principală</a></li>
-                    <li><a href="bookings.php">Rezervări</a></li>
+                    <li class="active"><a href="home.php">Pagina Principala</a></li>
+                    <li><a href="bookings.php">Rezervari</a></li>
                     <li><a href="flights.php">Zboruri</a></li>
-                    <li><a href="payments.php">Plăți</a></li>
+                    <li><a href="payments.php">Plati</a></li>
                     <li><a href="messages.php">Mesaje</a></li>
-                    <li><a href="tracking.php">Urmărire Zboruri</a></li>
+                    <li><a href="tracking.php">Urmarire Zboruri</a></li>
                     <li><a href="deals.php">Oferte</a></li>
+                    <li><a href="telecom.php">Telecom</a></li>
                 </ul>
                 <div class="sidebar-auth">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -667,7 +668,7 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
 
             <main class="main">
                 <div class="topbar">
-                    <h2>Pagină Principală</h2>
+                    <h2>Pagina Principala</h2>
                     
                 </div>
 
@@ -711,21 +712,21 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
                                     </tbody>
                                 </table>
                             <?php else: ?>
-                                <div class="empty-text">Nu există încă date pentru rute.</div>
+                                <div class="empty-text">Nu exista inca date pentru rute.</div>
                             <?php endif; ?>
                         </div>
 
                         <div class="card ticket-sales-card">
                             <div class="ticket-header">
                                 <div>
-                                    <div class="widget-title">Vânzări de Bilete</div>
+                                    <div class="widget-title">Vanzari de Bilete</div>
                                     <div class="ticket-total">
                                         <?= number_format($totalTicketsThisWeek) ?>
-                                        <span>Bilete Vândute</span>
+                                        <span>Bilete Vandute</span>
                                     </div>
                                 </div>
                                 <div class="ticket-filter">
-                                    <span>Toate Rezervările Plătite</span>
+                                    <span>Toate Rezervarile Platite</span>
                                 </div>
                             </div>
                             <div class="ticket-chart-wrap">
@@ -744,7 +745,7 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
                                         </span>
                                         <span class="legend-item">
                                             <span class="legend-line international"></span>
-                                            Internațional
+                                            International
                                         </span>
                                     </div>
                                 </div>
@@ -786,8 +787,8 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
                         </div>
 
                         <div class="card top-destinations-card">
-                            <div class="widget-title">Destinații de Top</div>
-                            <div class="widget-subtitle">Cele mai populare destinații</div>
+                            <div class="widget-title">Destinatii de Top</div>
+                            <div class="widget-subtitle">Cele mai populare destinatii</div>
                             <?php if (!empty($topDestinations)): ?>
                                 <div class="airline-list">
                                     <?php foreach ($topDestinations as $dest): ?>
@@ -801,7 +802,7 @@ $colors = ['#d8b75b', '#5f5f5f', '#7a5a1a', '#898989', '#966019', '#121212', '#f
                                     <?php endforeach; ?>
                                 </div>
                             <?php else: ?>
-                                <div class="empty-text">Nu există date încă.</div>
+                                <div class="empty-text">Nu exista inca date pentru destinatii.</div>
                             <?php endif; ?>
                         </div>
                     </div>
