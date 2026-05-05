@@ -8,7 +8,6 @@ function sendEmailNotification($conn, $to, $subject, $message) {
     $mail = new PHPMailer(true);
 
     try {
-        // 🔥 CONFIG SMTP GMAIL
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
@@ -19,7 +18,6 @@ function sendEmailNotification($conn, $to, $subject, $message) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
-        // 🔥 IMPORTANT
         $mail->setFrom('daniserb023@gmail.com', 'SkyTix');
         $mail->addAddress($to);
 
@@ -38,7 +36,6 @@ function sendEmailNotification($conn, $to, $subject, $message) {
         $message .= "\nError: " . $mail->ErrorInfo;
     }
 
-    // LOG în DB
     $stmt = $conn->prepare("
         INSERT INTO email_logs (user_email, subject, message, status, created_at)
         VALUES (?, ?, ?, ?, NOW())
